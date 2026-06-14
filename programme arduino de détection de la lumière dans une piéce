@@ -1,0 +1,74 @@
+#include <Adafruit_LiquidCrystal.h>
+#include <Adafruit_LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+
+const int pirPin = 2;           
+const int ldrPin = A0;          
+const int relayPin = 3;         
+const int buzzerPin = 4;        
+
+
+const int seuilLuminosite = 500;  
+const unsigned long delaiExtinction = 5000; 
+
+
+bool presence = false;
+unsigned long dernierTempsPresence = 0;
+
+void setup() {
+  pinMode(pirPin, INPUT);
+  pinMode(relayPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(relayPin, LOW); 
+  digitalWrite(buzzerPin, LOW);
+
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print(" Systeme pret ");
+}
+
+void loop() {
+  int mouvement = digitalRead(pirPin);
+  int luminosite = analogRead(ldrPin);
+
+  if (mouvement == HIGH) {
+    presence = true;
+    dernierTempsPresence = millis();
+
+
+    lcd.setCursor(0, 0);
+    lcd.print("Presence detectee");
+    digitalWrite(buzzerPin, HIGH);
+    delay(200);
+    digitalWrite(buzzerPin, LOW);
+
+   
+    if (luminosite < seuilLuminosite) {
+      digitalWrite(relayPin, HIGH); 
+      lcd.setCursor(0, 1);
+      lcd.print("Lumiere: ON       ");
+    } else {
+      digitalWrite(relayPin, LOW);
+      lcd.setCursor(0, 1);
+      lcd.print("Lumiere: OFF      ");
+    }
+
+  } else {
+  
+    if (presence && (millis() - dernierTempsPresence > delaiExtinction))
+    {
+      presence = false;
+      digitalWrite(relayPin, LOW);
+      lcd.setCursor(0, 0);
+      lcd.print("Pas de presence  ");
+      lcd.setCursor(0, 1);
+      lcd.print("Lumiere: OFF     ");
+    }
+  }
+
+  delay(500);
+}
